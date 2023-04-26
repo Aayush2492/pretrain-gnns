@@ -48,21 +48,29 @@ class GINConv(MessagePassing):
 
     def forward(self, x, edge_index, edge_attr):
         # add self loops in the edge space
+        # print("GIN Instance", self)
+        # print("___Message Model", edge_index.shape, edge_index.dtype, edge_index)
         edge_index = add_self_loops(edge_index, num_nodes=x.size(0))
 
         # add features corresponding to self-loop edges.
         self_loop_attr = torch.zeros(x.size(0), 2)
         self_loop_attr[:, 0] = 4  # bond type for self-loop edge
         self_loop_attr = self_loop_attr.to(edge_attr.device).to(edge_attr.dtype)
+        # print("Forward", edge_attr.shape, self_loop_attr.shape)
         edge_attr = torch.cat((edge_attr, self_loop_attr), dim=0)
+        # print("Forward", edge_attr.shape)
 
         edge_embeddings = self.edge_embedding1(edge_attr[:, 0]) + self.edge_embedding2(
             edge_attr[:, 1]
         )
 
+        # print("Message Model", edge_index.shape, edge_index.dtype, edge_index, edge_embeddings.shape)
+        # print(isinstance(edge_index, Tensor))
         return self.propagate(self.aggr, edge_index, x=x, edge_attr=edge_embeddings)
+        # return self.propagate(edge_index=edge_index, x=x, edge_attr=edge_embeddings, size=None)
 
     def message(self, x_j, edge_attr):
+        # print("message() function", x_j.shape, edge_attr.shape)
         return x_j + edge_attr
 
     def update(self, aggr_out):
@@ -282,15 +290,20 @@ class GNN(torch.nn.Module):
         else:
             raise ValueError("unmatched number of arguments.")
 
-        # x = self.x_embedding1(x[:, 0]) + self.x_embedding2(x[:, 1])
-        t1 = self.x_embedding1(x[:, 0])
-        t2 = self.x_embedding2(x[:, 1])
-        x = t1 + t2
-        print("okoko", t1, t2)
+        x = self.x_embedding1(x[:, 0]) + self.x_embedding2(x[:, 1])
+        # t1 = self.x_embedding1(x[:, 0])
+        # print("GNN:: forward() : X shape", x) # 17,2
+        # print("GNN:: forward() : t1 Shape", t1.shape) # 17 X 300
+        # t2 = self.x_embedding2(x[:, 1])
+        # print("GNN:: forward() : t2 Shape", t2.shape) # 17 X 300
+        # x_ = t1 + t2
+        # print("GNN:: forward() : Shape", x_.shape)
         h_list = [x]
-        print("DEBUG", self.gnns[0], type(h_list[0]), x, x.is_cuda)
+        #         print("Printing x", x)
+        #         print("DEBUG", self.gnns[0], type(h_list[0]), x, x.is_cuda)
         for layer in range(self.num_layer):
-            print("INDEX", layer)
+            # print("GNN:: forward() : INDEX", layer)
+            # print("GNN:: forward() : Type2", type(edge_index), edge_index.dtype)
             h = self.gnns[layer](h_list[layer], edge_index, edge_attr)
             h = self.batch_norms[layer](h)
             # h = F.dropout(F.relu(h), self.drop_ratio, training = self.training)
@@ -411,6 +424,7 @@ class GNN_graphpred(torch.nn.Module):
         else:
             raise ValueError("unmatched number of arguments.")
 
+        # print("Type1", type(edge_index), edge_index.dtype)
         node_representation = self.gnn(x, edge_index, edge_attr)
 
         return self.graph_pred_linear(self.pool(node_representation, batch))

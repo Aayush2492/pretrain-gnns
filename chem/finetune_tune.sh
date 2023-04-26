@@ -35,27 +35,29 @@ fold_idx=$1
 
 for batch_size in 8 64
 do
-for drop_ratio in 0 0.2 0.5
-do
-for dataset in ptc_mr mutag
-do
-for unsup in contextpred edgepred masking infomax
-do
+    for drop_ratio in 0 0.2 0.5
+    do
+        for dataset in ptc_mr mutag
+        do
+            for unsup in contextpred edgepred masking infomax
+            do
 
-model_file=${unsup}
-python finetune_mutag_ptc.py --input_model_file model_gin/${model_file}.pth --dataset $dataset --filename ${dataset}_drop${drop_ratio}_bsize${batch_size}/${model_file} --fold_idx $fold_idx --dropout_ratio $drop_ratio --batch_size $batch_size
+                model_file=${unsup}
+                python finetune_mutag_ptc.py --input_model_file model_gin/${model_file}.pth --dataset $dataset --filename ${dataset}_drop${drop_ratio}_bsize${batch_size}/${model_file} --fold_idx $fold_idx --dropout_ratio $drop_ratio --batch_size $batch_size
 
 
-model_file=supervised_${unsup}
-python finetune_mutag_ptc.py --input_model_file model_gin/${model_file}.pth --dataset $dataset --filename ${dataset}_drop${drop_ratio}_bsize${batch_size}/${model_file} --fold_idx $fold_idx --dropout_ratio $drop_ratio --batch_size $batch_size
+                model_file=supervised_${unsup}
+                python finetune_mutag_ptc.py --input_model_file model_gin/${model_file}.pth --dataset $dataset --filename ${dataset}_drop${drop_ratio}_bsize${batch_size}/${model_file} --fold_idx $fold_idx --dropout_ratio $drop_ratio --batch_size $batch_size
 
+            done
+
+            model_file=supervised
+            python finetune_mutag_ptc.py --input_model_file model_gin/${model_file}.pth --dataset $dataset --filename ${dataset}_drop${drop_ratio}_bsize${batch_size}/${model_file} --fold_idx $fold_idx --dropout_ratio $drop_ratio --batch_size $batch_size
+
+            python finetune_mutag_ptc.py --dataset $dataset --filename ${dataset}_drop${drop_ratio}_bsize${batch_size}/nopretrain --fold_idx $fold_idx --dropout_ratio $drop_ratio --batch_size $batch_size
+
+        done
+    done
 done
 
-model_file=supervised
-python finetune_mutag_ptc.py --input_model_file model_gin/${model_file}.pth --dataset $dataset --filename ${dataset}_drop${drop_ratio}_bsize${batch_size}/${model_file} --fold_idx $fold_idx --dropout_ratio $drop_ratio --batch_size $batch_size
-
-python finetune_mutag_ptc.py --dataset $dataset --filename ${dataset}_drop${drop_ratio}_bsize${batch_size}/nopretrain --fold_idx $fold_idx --dropout_ratio $drop_ratio --batch_size $batch_size
-
-done
-done
-done
+# python finetune_mutag_ptc.py --input_model_file model_gin/supervised.pth --dataset mutag --filename mutag_drop0_bsize8/supervised --fold_idx $fold_idx --dropout_ratio $drop_ratio --batch_size $batch_size
